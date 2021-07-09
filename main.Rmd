@@ -1,0 +1,76 @@
+---
+title: "ifpan-solich-mouseko"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = FALSE,
+    cache = TRUE
+)
+```
+
+```{r load_libraries, include=FALSE}
+library(tidyverse)
+library(readr)
+```
+
+
+```{r read_data, message=FALSE}
+count_files <- list.files('data/counts')
+counts <- tibble()
+for (file in count_files) {
+    sam_file <- str_replace(file, '_count\\.sub', '.sam')
+    read_tsv(paste0('data/counts/', file), comment = "#") %>% 
+        rename(counts = {{ sam_file }}) %>%  
+        mutate(sample = str_sub(sam_file, end = -5)) -> sample_counts
+    
+    counts %>% 
+        bind_rows(sample_counts) ->
+        counts
+}
+
+counts %>% 
+    mutate(part = str_sub(sample, end = 2)) %>% 
+    mutate(ko = str_detect(sample, '11|16')) %>% 
+    mutate(ko = ifelse(ko, 'NETKO', 'WT')) %>% 
+    group_by(Geneid, part, ko) %>% 
+    mutate(mean = mean(counts), sd = sd(counts), sem = sd(counts) / sqrt(n())) %>% 
+    ungroup() ->
+    counts
+```
+
+Wczytane dane dla zliczeń dla genów 'Inf2', 'Kmt2d', 'Slc6a2'. Czy oznaczenia próbek są prawidłowe?
+```{r show_data}
+counts %>% 
+    filter(Geneid %in% c("Inf2", "Kmt2d", "Slc6a2")) %>% 
+    select(-Start:-Strand, -sd) %>% 
+    arrange(Geneid, part, ko)
+```
+
+
+```{r graphs, results='asis'}
+for (geneid in c('Kmt2d', 'Inf2')) {
+    cat('###', geneid, '\n\n')
+    cat('![', geneid, '](igv-', tolower(geneid), '.png)', sep = '')
+    counts %>% 
+        filter(Geneid == geneid & part == 'FC') ->
+        plot_data
+
+    ggplot(plot_data, aes(x = ko, y = counts)) + 
+        geom_bar(aes(fill = ko), stat = 'summary', fun = 'mean', color = 'black', width = .5) +
+        geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), width = .2, size = .4) +
+        scale_fill_brewer(palette = "Set1") +
+        scale_y_continuous(limits = c(0, NA)) ->
+        p
+    print(p)
+    cat('\n\n')
+}
+```
+
+```{r}
+
+```
+
