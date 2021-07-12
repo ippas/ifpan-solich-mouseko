@@ -28,6 +28,7 @@ library(edgeR)
 
 
 ```{r read_data, message=FALSE}
+# dane pochodzą ze wcześniejszej analizy, patrz: main.R
 count_files <- list.files('data/counts')
 counts <- tibble()
 for (file in count_files) {
