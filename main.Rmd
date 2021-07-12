@@ -12,9 +12,18 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("edgeR")
+```
+
+
 ```{r load_libraries, include=FALSE}
 library(tidyverse)
 library(readr)
+library(edgeR)
 ```
 
 
